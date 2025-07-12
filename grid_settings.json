@@ -1,0 +1,13 @@
+{
+    "row_height_mm": 10.0,
+    "col_width_mm": 10.0,
+    "grid_line_visible": true,
+    "grid_color": "#000000",
+    "grid_width": 1,
+    "page_size": "A4",
+    "margin_top_mm": 10.0,
+    "margin_bottom_mm": 10.0,
+    "margin_left_mm": 10.0,
+    "margin_right_mm": 10.0,
+    "output_dpi": 1200
+}
