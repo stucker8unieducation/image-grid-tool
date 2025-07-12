@@ -98,7 +98,7 @@ class ImageGridApp(QMainWindow):
             logger.info(f"{path} から設定を読み込みました。")
     
     def save_settings_as(self):
-        path, _ = QFileDialog.getSaveFileName(self, "設定ファイルを保存", "", "JSON Files (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, "設定ファイルを保存", "", "PDF Files (*.pdf)")
         if path:
             if not path.lower().endswith('.json'):
                 path += '.json'
@@ -122,8 +122,8 @@ class ImageGridApp(QMainWindow):
         self.progress_dialog = QProgressDialog("PDFを生成中...", "キャンセル", 0, 100, self)
         self.progress_dialog.setWindowModality(Qt.WindowModal)
         
-        self.pdf_thread = PDFGenerationThread(self.image_paths, self.settings, self)
-        self.pdf_thread.finished.connect(lambda data: self._on_pdf_finished(data, save_path))
+        self.pdf_thread = PDFGenerationThread(self.image_paths, self.settings)
+        self.pdf_thread.finished.connect(lambda temp_path, temp_dir: self._on_pdf_finished(temp_path, temp_dir, save_path))
         self.pdf_thread.error.connect(self._on_pdf_error)
         self.pdf_thread.progress.connect(self.progress_dialog.setValue)
         self.progress_dialog.canceled.connect(self.pdf_thread.requestInterruption)
@@ -131,12 +131,20 @@ class ImageGridApp(QMainWindow):
         self.pdf_thread.start()
         self.progress_dialog.exec_()
     
-    def _on_pdf_finished(self, pdf_data: bytes, save_path: str):
+    def _on_pdf_finished(self, temp_path: str, temp_dir: str, save_path: str):
         self.progress_dialog.setValue(100)
         try:
-            with open(save_path, 'wb') as f: f.write(pdf_data)
+            import shutil
+            shutil.copy2(temp_path, save_path)
             QMessageBox.information(self, "完了", f"PDFを保存しました: {save_path}")
-        except Exception as e: self._on_pdf_error(f"PDFの保存に失敗しました: {e}")
+        except Exception as e:
+            self._on_pdf_error(f"PDFの保存に失敗しました: {e}")
+        finally:
+            try:
+                if temp_dir and os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+            except Exception as e:
+                logger.error(f"一時ディレクトリの削除中にエラーが発生しました: {e}")
 
     def _on_pdf_error(self, message: str):
         self.progress_dialog.close(); QMessageBox.critical(self, "エラー", f"PDF生成に失敗しました:\n{message}")
